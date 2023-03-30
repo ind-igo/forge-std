@@ -14,7 +14,6 @@ import {StdStorage, stdStorageSafe} from "./StdStorage.sol";
 import {VmSafe} from "./Vm.sol";
 
 import {Surl} from "lib/surl/src/Surl.sol";
-import {RLPEncode} from "./RLPEncode.sol";
 
 // 📦 BOILERPLATE
 import {Script} from "./Script.sol";
@@ -22,7 +21,6 @@ import {Script} from "./Script.sol";
 // ⭐️ SCRIPT
 abstract contract BatchScript is Script {
     using StdJson for string;
-    using RLPEncode for *;
     using Surl for *;
 
     //     "to": "<checksummed address>",
@@ -87,7 +85,7 @@ abstract contract BatchScript is Script {
         encodedTxns.push(abi.encodePacked(Operation.CALL, to_, value_, data_.length, data_));
     }
 
-        // Computes the hash of a Safe transaction.
+    // Computes the hash of a Safe transaction.
     // Look at https://github.com/safe-global/safe-eth-py/blob/174053920e0717cc9924405e524012c5f953cd8f/gnosis/safe/safe_tx.py#L186
     // and https://github.com/safe-global/safe-eth-py/blob/master/gnosis/eth/eip712/__init__.py
     function getTransactionHash(address safe_, Batch memory batch_) internal returns (bytes32) {
