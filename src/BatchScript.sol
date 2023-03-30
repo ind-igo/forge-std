@@ -59,18 +59,22 @@ abstract contract BatchScript is Script {
         DELEGATECALL
     }
 
-    // Stages
-    // 1. encodeWithSelector transactions into bytes
-    // 2. encodePacked to packed structure
     struct Batch {
-        Operation operation;
         address to;
         uint256 value;
-        bytes encodedTx;
+        bytes data;
+        Operation operation;
+        uint256 safeTxGas;
+        uint256 baseGas;
+        uint256 gasPrice;
+        address gasToken;
+        address refundReceiver;
+        uint256 nonce;
+        bytes32 txHash;
     }
 
     bytes[] public encodedTxns;
-    Batch public batch;
+    // Batch public batch;
 
     // Adds an encoded transaction to the batch.
     // Encodes the transaction as packed bytes of:
@@ -83,23 +87,126 @@ abstract contract BatchScript is Script {
         encodedTxns.push(abi.encodePacked(Operation.CALL, to_, value_, data_.length, data_));
     }
 
+        // Computes the hash of a Safe transaction.
+    // Look at https://github.com/safe-global/safe-eth-py/blob/174053920e0717cc9924405e524012c5f953cd8f/gnosis/safe/safe_tx.py#L186
+    // and https://github.com/safe-global/safe-eth-py/blob/master/gnosis/eth/eip712/__init__.py
+    function getTransactionHash(address safe_, Batch memory batch_) internal returns (bytes32) {
+        // // Create EIP712 structured data for the batch transaction
 
-    // Encodes the stored encoded transactions into a single Multisend transaction
-    function createBatch() internal {
-        bytes memory data = abi.encodeWithSignature("multiSend(bytes)", abi.encode(encodedTxns));
-        batch = Batch(Operation.DELEGATECALL, SAFE_MULTISEND_ADDRESS_PRI, 0, data);
+        // // EIP712Domain Types
+        // string[] memory domainTypes = new string[](2);
+        // domainTypes[0] = "";
+        // domainTypes[0] = domainTypes[0].serialize("name", "verifyingContract");
+        // domainTypes[0] = domainTypes[0].serialize("type", "address");
+        // domainTypes[1] = "";
+        // domainTypes[1] = domainTypes[1].serialize("name", "chainId");
+        // domainTypes[1] = domainTypes[1].serialize("type", "uint256");
+
+        // // SafeTx Field Types
+        // string[] memory txnTypes = new string[](10);
+        // txnTypes[0] = "";
+        // txnTypes[0] = txnTypes[0].serialize("name", "to");
+        // txnTypes[0] = txnTypes[0].serialize("type", "address");
+        // txnTypes[1] = "";
+        // txnTypes[1] = txnTypes[1].serialize("name", "value");
+        // txnTypes[1] = txnTypes[1].serialize("type", "uint256");
+        // txnTypes[2] = "";
+        // txnTypes[2] = txnTypes[2].serialize("name", "data");
+        // txnTypes[2] = txnTypes[2].serialize("type", "bytes");
+        // txnTypes[3] = "";
+        // txnTypes[3] = txnTypes[3].serialize("name", "operation");
+        // txnTypes[3] = txnTypes[3].serialize("type", "uint8");
+        // txnTypes[4] = "";
+        // txnTypes[4] = txnTypes[4].serialize("name", "safeTxGas");
+        // txnTypes[4] = txnTypes[4].serialize("type", "uint256");
+        // txnTypes[5] = "";
+        // txnTypes[5] = txnTypes[5].serialize("name", "baseGas");
+        // txnTypes[5] = txnTypes[5].serialize("type", "uint256");
+        // txnTypes[6] = "";
+        // txnTypes[6] = txnTypes[6].serialize("name", "gasPrice");
+        // txnTypes[6] = txnTypes[6].serialize("type", "uint256");
+        // txnTypes[7] = "";
+        // txnTypes[7] = txnTypes[7].serialize("name", "gasToken");
+        // txnTypes[7] = txnTypes[7].serialize("type", "address");
+        // txnTypes[8] = "";
+        // txnTypes[8] = txnTypes[8].serialize("name", "refundReceiver");
+        // txnTypes[8] = txnTypes[8].serialize("type", "address");
+        // txnTypes[9] = "";
+        // txnTypes[9] = txnTypes[9].serialize("name", "nonce");
+        // txnTypes[9] = txnTypes[9].serialize("type", "uint256");
+
+        // // Create the top level types object
+        // string memory types = "";
+        // types = types.serialize("EIP712Domain", domainTypes);
+        // types = types.serialize("SafeTx", txnTypes);
+
+        // // Create the message object
+        // string memory message = "";
+        // message = message.serialize("to", Batch.to);
+        // message = message.serialize("value", Batch.value);
+        // message = message.serialize("data", Batch.data);
+        // message = message.serialize("operation", uint256(Batch.operation));
+        // message = message.serialize("safeTxGas", Batch.safeTxGas);
+        // message = message.serialize("baseGas", Batch.baseGas);
+        // message = message.serialize("gasPrice", Batch.gasPrice);
+        // message = message.serialize("gasToken", address(0));
+        // message = message.serialize("refundReceiver", address(0));
+        // message = message.serialize("nonce", Batch.nonce);
+
+        // // Create the domain object
+        // string memory domain = "";
+        // domain = domain.serialize("verifyingContract", Batch.safe);
+        // domain = domain.serialize("chainId", vm.envUint("CHAIN_ID"));
+
+        // // Create the payload object
+        // string memory payload = "";
+        // payload = payload.serialize("types", types);
+        // payload = payload.serialize("primaryType", "SafeTx");
+        // payload = payload.serialize("domain", domain);
+        // payload = payload.serialize("message", message);
+
+        // ABI-encoding version
+
+        // Create hash of the transaction with EIP712
+    
+        return keccak256(abi.encodePacked(
+                0x1901
+                keccak256(
+                    abi.encode(
+                        keccak256("EIP712Domain(address verifyingContract, uint256 chainId)"),
+                        safe_,
+                        vm.envUint("CHAIN_ID"),
+                    )
+                ),
+                keccak256(
+                    abi.encode(
+                        keccak256("SafeTx(address to,uint256 value,bytes data,uint8 operation,uint256 safeTxGas,uint256 baseGas,uint256 gasPrice,address gasToken,address refundReceiver,uint256 nonce)"),
+                        batch_.to,
+                        batch_.value,
+                        batch_.data,
+                        uint256(batch_.operation),
+                        batch_.safeTxGas,
+                        batch_.baseGas,
+                        batch_.gasPrice,
+                        address(0),
+                        address(0),
+                        batch_.nonce
+                    )
+                )
+            )
+        );
     }
 
-    function estimateBatchGas(address safe_) internal returns (uint256) {
+    function estimateBatchGas(address safe_, Batch memory batch_) internal returns (uint256) {
         // Get endpoint
         string memory endpoint = getEstimateGasEndpoint(safe_);
 
         // Create json payload for send API call to Gnosis transaction service
         string memory payload = "";
-        payload = payload.serialize("to", Batch.to);
-        payload = payload.serialize("value", Batch.value);
-        payload = payload.serialize("data", Batch.data);
-        payload = payload.serialize("operation", uint256(Batch.operation));
+        payload = payload.serialize("to", batch_.to);
+        payload = payload.serialize("value", batch_.value);
+        payload = payload.serialize("data", batch_.data);
+        payload = payload.serialize("operation", uint256(batch_.operation));
 
         // Get gas estimate for batch
         (uint256 status, bytes memory data) = endpoint.post(getHeaders(), payload);
@@ -134,44 +241,47 @@ abstract contract BatchScript is Script {
         }
     }
 
-    // Transaction data to be hashed
-    // 0. nonce
-    // 1. gasPrice (base or priority?)
-    // 2. gasLimit
-    // 3. to
-    // 4. value
-    // 5. data 
-    // 6. chainId
-    // Two zeros at the end?
-    // 0
-    // 0
-    // Look at https://ethereum.org/en/developers/docs/transactions/
-    function getTransactionHash() internal returns (string memory) {
 
+    // Encodes the stored encoded transactions into a single Multisend transaction
+    function createBatch(address safe_) internal returns (Batch memory batch) {
+        // Set initial batch fields
+        batch.to = SAFE_MULTISEND_ADDRESS_PRI;
+        batch.value = 0;
+        batch.operation = Operation.DELEGATECALL;
+
+        // Encode the batch calldata
+        batch.data = abi.encodeWithSignature("multiSend(bytes)", abi.encode(encodedTxns));
+
+        // Get the gas estimate for the batch
+        batch.safeTxGas = estimateBatchGas(safe_, batch.data);
+
+        // Get the gas price
+        (batch.baseGas, batch.gasPrice) = getGasPrice();
+
+        // Get the safe nonce
+        batch.nonce = getNonce(safe_);
+
+        // Get the transaction hash
+        batch.txHash = getTransactionHash(safe_, batch);        
     }
 
-    function sendBatch(address safe_) internal {
-
-        uint256 safeTxGas = estimateBatchGas(safe_);
-        (uint256 baseFee, uint256 gasPrice) = getGasPrice();
-        uint256 nonce = getNonce(safe_);
+    function sendBatch(address safe_, Batch memory batch_) internal {
         
         // Get endpoint
         string memory endpoint = getSendEndpoint(safe_);
 
-
-        // Create json payload for send API call to Gnosis transaction service
+        // Create json payload for API call to Gnosis transaction service
         string memory payload = "";
         payload = payload.serialize("safe", safe_);
-        payload = payload.serialize("to", Batch.to);
-        payload = payload.serialize("value", Batch.value);
-        payload = payload.serialize("data", Batch.data);
-        payload = payload.serialize("operation", uint256(Batch.operation));
-        payload = payload.serialize("safeTxGas", safeTxGas);
-        payload = payload.serialize("baseGas", baseFee);
-        payload = payload.serialize("gasPrice", priorityFee);
-        payload = payload.serialize("nonce", nonce);
-        payload = payload.serialize("contractTransactionHash", ""); // TODO
+        payload = payload.serialize("to", batch_.to);
+        payload = payload.serialize("value", batch_.value);
+        payload = payload.serialize("data", batch_.data);
+        payload = payload.serialize("operation", uint256(batch_.operation));
+        payload = payload.serialize("safeTxGas", batch_.safeTxGas);
+        payload = payload.serialize("baseGas", batch_.baseGas);
+        payload = payload.serialize("gasPrice", batch_.gasPrice);
+        payload = payload.serialize("nonce", batch_.nonce);
+        payload = payload.serialize("contractTransactionHash", batch_.txHash);
         payload = payload.serialize("sender", msg.sender);
 
         // Send batch
@@ -186,10 +296,9 @@ abstract contract BatchScript is Script {
         
     }
 
-    function executeBatch() internal {
-        createBatch();
-        estimateBatchGas();
-        sendBatch();
+    function executeBatch(address safe_) internal {
+        Batch memory batch = createBatch(safe_);
+        sendBatch(safe_, batch);
     }
 
     function getSendEndpoint(address safe_) public returns(string memory) {
