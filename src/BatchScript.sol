@@ -22,6 +22,7 @@ import {Script} from "./Script.sol";
 // ⭐️ SCRIPT
 abstract contract BatchScript is Script {
     using StdJson for string;
+    using RLPEncode for *;
     using Surl for *;
 
     //     "to": "<checksummed address>",
@@ -144,6 +145,10 @@ abstract contract BatchScript is Script {
     // Two zeros at the end?
     // 0
     // 0
+    // Look at https://ethereum.org/en/developers/docs/transactions/
+    function getTransactionHash() internal returns (string memory) {
+
+    }
 
     function sendBatch(address safe_) internal {
 
